@@ -94,7 +94,7 @@ function App(props) {
             React.createElement("div", { className: "container" },
                 React.createElement("h1", null, "MONTO"),
                 React.createElement("div", { className: "row" },
-                    React.createElement("input", Object.assign({ id: "monto", type: "number", defaultValue: "10" }, register("monto")))),
+                    React.createElement("input", Object.assign({ id: "monto", type: "number", defaultValue: "10", step: ".01" }, register("monto")))),
                 React.createElement("div", { className: "row" },
                     React.createElement("table", { className: "centrada" },
                         React.createElement("tr", null,
