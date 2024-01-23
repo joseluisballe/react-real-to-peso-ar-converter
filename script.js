@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ImCalculator } from "react-icons/im";
 import { GoDotFill } from "react-icons/go";
 import XMLParser from 'react-xml-parser';
+import Popup from 'reactjs-popup';
 import { createRoot } from "react-dom/client";
 function App(props) {
     //Todo en un solo estado
@@ -187,7 +188,24 @@ function App(props) {
                 React.createElement(GoDotFill, { style: { color: estado.coneccion.bcb } }),
                 " ",
                 React.createElement("a", { href: "https://www.bcb.gov.br/conversao", target: "_blank" }, "BCB"),
-                React.createElement("br", null))));
+                React.createElement("br", null),
+                React.createElement(Popup, { trigger: React.createElement("a", { href: "#" }, "T\u00E9rminos y condiciones"), position: "center top", modal: true, nested: true },
+                    React.createElement("div", { style: { backgroundColor: "#ccc", textAlign: "center" } },
+                        "El uso de esta esta app es gratis y bajo tu responsabilidad, usala con prudencia y verifica que los montos sean coherentes.",
+                        React.createElement("br", null),
+                        "La hice en ",
+                        React.createElement("a", { href: "https://livecodes.io" }, "livecodes.io"),
+                        " y uso la API de ",
+                        React.createElement("a", { href: "https://dolarapi.com/docs/", target: "_blank" }, "DolarAPI"),
+                        "y del ",
+                        React.createElement("a", { href: "https://www.bcb.gov.br/conversao", target: "_blank" }, "Banco Central de Brasil"),
+                        " para recuperar las cotizaciones del d\u00EDa.",
+                        React.createElement("br", null),
+                        "Si precisas cambiar algo o hacer algo similar dejame un mensaje y nos tomamos un cafecito.",
+                        React.createElement("br", null),
+                        React.createElement("br", null),
+                        React.createElement("a", { href: 'https://cafecito.app/joseluispolaco', rel: 'noopener', target: '_blank' },
+                            React.createElement("img", { srcset: 'https://cdn.cafecito.app/imgs/buttons/button_1.png 1x, https://cdn.cafecito.app/imgs/buttons/button_1_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_1_3.75x.png 3.75x', src: 'https://cdn.cafecito.app/imgs/buttons/button_1.png', alt: 'Invitame un caf\u00E9 en cafecito.app' })))))));
     }
 }
 const root = createRoot(document.querySelector("#app"));
