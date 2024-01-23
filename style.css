@@ -38,4 +38,21 @@ button {
    font-family: monospace;
    min-width: 5rem;
    width: 80%;
+   border-spacing: 0;
+}
+.centrada td{
+  border-collapse: collapse;
+  border-bottom: 1px solid black;
+}
+.swDolarReal{
+  color: dimgrey;
+  width: 40%;
+  border: 1px solid;
+  display: inline-block;
+}
+.swDolarRealActivo{
+  background-color: #74f296;
+  width: 40%;
+  border: 1px solid;
+  display: inline-block;
 }
