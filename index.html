@@ -1,19 +1,237 @@
 <!DOCTYPE html>
-<html lang="en" class=""><head><title>CalculaMe</title><meta name="title" content="CalculaMe"><meta name="description" content="Pasa Reales y Dolares a distintos pesos."><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="./style.css"><script src="https://unpkg.com/es-module-shims@1.4.4/dist/es-module-shims.js" async=""></script><script type="importmap">{"imports": {
-  "react": "https://esm.sh/react",
-  "react-icons/im": "https://esm.sh/react-icons/im",
-  "react-icons/go": "https://esm.sh/react-icons/go",
-  "react-xml-parser": "https://esm.sh/react-xml-parser",
-  "reactjs-popup": "https://esm.sh/reactjs-popup",
-  "react-dom/client": "https://esm.sh/react-dom/client"
-}}</script></head><body>
+<html>
 
-    
-      <title>CalculaMe</title>
-    
-    
-      <div id="app">Loading...</div>
-    
+<head>
+    <title>Calculame</title>
+    <style type="text/css">
+        .table {
+            display: table;
+            border-collapse: collapse;
+            font-family: monospace;
+        }
 
-<script src="./script.js" type="module"></script></body></html>
+        .row {
+            display: table-row;
+        }
+
+        .cell {
+            display: table-cell;
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+        .font-size-3em {
+            font-size: 3em;
+        }
+        .big-input-numbers {
+            border: none;
+            border-bottom: solid gray;
+        }
+        .clicked {
+            background-color: rgb(70, 252, 70);
+        }
+
+        .hover-green:hover {
+            background-color: rgb(70, 252, 70);
+        }
+        #result{
+            font-family: monospace;
+            font-size: 2em;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"
+        integrity="sha512-j12pXc2gXZL/JZw5Mhi6LC7lkiXL0e2h+9ZWpqhniz0DkDrO01VNlBrG3LkPBn6DgG2b8CDjzJT+lxfocsS1Vw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/solid.min.js"
+        integrity="sha512-H/FYzgm63CLJLwSgCNv7zmAHWnbw7GwOrnCjE15CD969yHWj7fGDiHHLZuZJLO9ZGIkBR/JL91/p/ddbtUUgQQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript">
+        function redondear(valor, decimales = 2){
+            return Number.parseFloat(valor).toFixed(decimales);
+        }
+
+        async function consultarDolarSi(url) {
+            const res = await fetch(url);
+            if(res.ok){
+                const data = await res.json();
+                return { state: "ok", data: data }; 
+            }
+            return { state: "error", data: "No se pudo obtener la cotizacion" };
+        }
+
+        async function consultarDolarBcb(){
+            let hoy = new Date();
+            let anio = hoy.getFullYear();
+            let mes = (hoy.getMonth() + 1).toString().padStart(2, '0');
+            let dia = hoy.getDate();
+            let url = 'https://www3.bcb.gov.br/bc_moeda/rest/cotacao/fechamento/ultima/1/220/'+anio+'-'+mes+'-'+dia;
+            const res = await fetch(url);
+            if(res.ok){
+                const xml = await res.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(xml, "application/xml");
+                const data = parseFloat(doc.getElementsByTagName("taxaVenda")[0].textContent);
+                return { state: "ok", data: data }; 
+            }
+            return { state: "error", data: "No se pudo obtener la cotizacion" };
+        }
+
+        $("document").ready(function () {
+            $("form").submit(function (e) { e.preventDefault(); });
+
+            $("button").bind("click", function (e) {
+                e.preventDefault();
+                $("button").removeClass("clicked");
+                e.target.classList.add("clicked");
+
+                Promise.all(
+                    [consultarDolarSi('https://dolarapi.com/v1/dolares'),
+                    consultarDolarBcb()])
+                    .then((cotis) => {
+                        console.log(cotis);
+                        cotDolarSi = cotis[0];
+                        cotDolarBcb = cotis[1];
+                        let texto = "";
+                        if(cotDolarSi.state == "ok"){
+                            usdBrs = redondear(1 * cotDolarBcb.data);
+                            $(".usd-brs").text(usdBrs);
+
+                            usdArs = redondear(1 * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
+                            $(".usd-ars").text(usdArs);
+
+                            usdArst = redondear(1 * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
+                            $(".usd-arst").text(usdArst);
+
+                            usdArsb = redondear(1 * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                            $(".usd-arsb").text(usdArsb);
+
+                            brsUsd = redondear(1 / cotDolarBcb.data);
+                            $(".brs-usd").text(brsUsd);
+
+                            brsArs = redondear(brsUsd * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
+                            $(".brs-ars").text(brsArs);
+
+                            brsArst = redondear(brsUsd * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
+                            $(".brs-arst").text(brsArst);
+
+                            brsArsb = redondear(brsUsd * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                            $(".brs-arsb").text(brsArsb);
+
+                            arsUsd = redondear(1 / cotDolarSi.data.find((obj) => obj.casa == "oficial").venta,5);
+                            $(".ars-usd").text(arsUsd);
+
+                            arsBrs = redondear(usdBrs * arsUsd,5);
+                            $(".ars-brs").text(arsBrs);
+
+                            arstBrs = redondear(arsUsd * usdArst);
+                            $(".ars-arst").text(arstBrs);
+
+                            arsbBrs = redondear(arsUsd * usdArsb);
+                            $(".ars-arsb").text(arsbBrs);
+
+                            let importe = $("#importe").val();
+                            if(e.target.name == "brs"){
+                                reales = redondear(importe);
+                                dolares = redondear(importe / cotDolarBcb.data);
+                                pesos = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
+                                pesosTarjeta = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
+                                pesosBolsa = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                                texto = "<p>" + importe + " reales son</p>";
+                                texto = texto + "<p>" + dolares + " dolares</p>";
+                                texto = texto + "<p>" + pesos + " pesos oficial</p>";
+                                texto = texto + "<p>" + pesosTarjeta + " pesos tarjeta</p>";
+                                texto = texto + "<p>" + pesosTarjeta + " pesos bolsa</p>";
+                            }else if(e.target.name == "ars"){
+                                pesos = redondear(importe);
+                                dolares = redondear(importe / cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
+                                dolaresTarjeta = redondear(importe / cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
+                                dolaresBolsa = redondear(importe / cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                                reales = redondear(dolares * cotDolarBcb.data);
+                                texto = "<p>" + importe + " PESOS son</p>";
+                                texto = texto + "<p>" + dolares + " DOLARES oficial</p>";
+                                texto = texto + "<p>" + dolaresTarjeta + " DOLARES tarjeta</p>";
+                                texto = texto + "<p>" + dolaresBolsa + " DOLARES bolsa</p>";
+                                texto = texto + "<p>" + reales + " REALES</p>";
+                            }else if(e.target.name == "usd"){
+                                dolares = redondear(importe);
+                                pesos = redondear(importe * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
+                                pesosTarjeta = redondear(importe * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
+                                pesosBolsa = redondear(importe * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                                reales = redondear(dolares * cotDolarBcb.data);
+                                texto = "<p>" + importe + " DOLARES son</p>";
+                                texto = texto + "<p>" + pesos + " PESOS oficial</p>";
+                                texto = texto + "<p>" + pesosTarjeta + " PESOS tarjeta</p>";
+                                texto = texto + "<p>" + pesosBolsa + " PESOS bolsa</p>";
+                                texto = texto + "<p>" + reales + " REALES</p>";
+
+                            }
+                            $("#result").html(texto);
+                        }else{
+                            $("#result").text("ERROR");
+                        }
+
+                    }).catch((error) => {
+                        console.log(error);
+                    });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <main>
+        <header>
+            <form id="datos">
+                <input placeholder="IMPORTE..." class="big-input-numbers font-size-3em" id="importe" name="importe" value=""
+                type="number">
+            </form>
+        </header>
+        <article id="conversiones" tabindex="1">
+            <button id="calcularUsd" name="usd" class="font-size-3em hover-green">USD</button>
+            <button id="calcularBrs" name="brs" class="font-size-3em hover-green">BRS</button>
+            <button id="calcularArs" name="ars" class="font-size-3em hover-green">ARS</button>
+        </article>
+        <article id="result">
+        </article>
+        <article id="cotizaciones" tabindex="2">
+            <div class="table">
+                <div class="row">
+                    <div class="cell">-</div>
+                    <div class="cell">USD</div>
+                    <div class="cell">BRS</div>
+                    <div class="cell">ARS</div>
+                    <div class="cell">Tarjeta</div>
+                    <div class="cell">Bolsa</div>
+                </div>
+                <div class="row">
+                    <div class="cell">1 USD</div>
+                    <div class="cell">1</div>
+                    <div class="cell usd-brs">?</div>
+                    <div class="cell usd-ars">?</div>
+                    <div class="cell usd-arst">?</div>
+                    <div class="cell usd-arsb">?</div>
+                </div>
+                <div class="row">
+                    <div class="cell">1 BRS</div>
+                    <div class="cell brs-usd">?</div>
+                    <div class="cell">1</div>
+                    <div class="cell brs-ars">?</div>
+                    <div class="cell brs-arst">?</div>
+                    <div class="cell brs-arsb">?</div>
+                </div>
+                <div class="row">
+                    <div class="cell">1 ARS</div>
+                    <div class="cell ars-usd">?</div>
+                    <div class="cell ars-brs">?</div>
+                    <div class="cell">1</div>
+                    <div class="cell ars-arst">?</div>
+                    <div class="cell ars-arsb">?</div>
+                </div>
+            </div>
+        </article>
+    </main>
+</body>
+
+</html>
