@@ -4,10 +4,28 @@
 <head>
     <title>Calculame</title>
     <style type="text/css">
+        body {
+            width: 80%;
+            margin: 0 auto;
+            font-family: monospace;
+        }
+
+        #importe {
+            width: 80%;
+            margin: 0 auto;
+            display: block;
+        }
+
+        article {
+            text-align: center;
+        }
+
         .table {
             display: table;
             border-collapse: collapse;
             font-family: monospace;
+            font-size: 2em;
+            margin: auto;
         }
 
         .row {
@@ -20,13 +38,16 @@
             padding: 10px;
             text-align: center;
         }
+
         .font-size-3em {
-            font-size: 3em;
+            font-size: 4em;
         }
+
         .big-input-numbers {
             border: none;
             border-bottom: solid gray;
         }
+
         .clicked {
             background-color: rgb(70, 252, 70);
         }
@@ -34,9 +55,18 @@
         .hover-green:hover {
             background-color: rgb(70, 252, 70);
         }
-        #result{
+
+        #result {
             font-family: monospace;
-            font-size: 2em;
+            font-size: 3em;
+        }
+
+        @media (max-width:801px) {
+            body {
+                width: 40%;
+                margin: 0 auto;
+                font-family: monospace;
+            }
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/fontawesome.min.js"
@@ -48,53 +78,66 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script type="text/javascript">
-        function redondear(valor, decimales = 2){
+        function redondear(valor, decimales = 2) {
             return Number.parseFloat(valor).toFixed(decimales);
         }
 
         async function consultarDolarSi(url) {
             const res = await fetch(url);
-            if(res.ok){
+            if (res.ok) {
                 const data = await res.json();
-                return { state: "ok", data: data }; 
+                return { state: "ok", data: data };
             }
             return { state: "error", data: "No se pudo obtener la cotizacion" };
         }
 
-        async function consultarDolarBcb(){
+        function getUrlDolarBcb() {
             let hoy = new Date();
             let anio = hoy.getFullYear();
             let mes = (hoy.getMonth() + 1).toString().padStart(2, '0');
             let dia = hoy.getDate();
-            let url = 'https://www3.bcb.gov.br/bc_moeda/rest/cotacao/fechamento/ultima/1/220/'+anio+'-'+mes+'-'+dia;
+            return 'https://www3.bcb.gov.br/bc_moeda/rest/cotacao/fechamento/ultima/1/220/' + anio + '-' + mes + '-' + dia;
+        }
+
+        async function consultarDolarBcb(url) {
             const res = await fetch(url);
-            if(res.ok){
+            if (res.ok) {
                 const xml = await res.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(xml, "application/xml");
                 const data = parseFloat(doc.getElementsByTagName("taxaVenda")[0].textContent);
-                return { state: "ok", data: data }; 
+                return { state: "ok", data: data };
             }
             return { state: "error", data: "No se pudo obtener la cotizacion" };
         }
 
         $("document").ready(function () {
-            $("form").submit(function (e) { e.preventDefault(); });
+            $("form").submit(function (e) {
+                e.preventDefault();
+                let clicked_button = $("button.clicked");
+                if (clicked_button.length > 0) {
+                    clicked_button.click();
+                } else {
+                    $("#calcularUsd").click();
+                }
+            });
 
             $("button").bind("click", function (e) {
                 e.preventDefault();
                 $("button").removeClass("clicked");
                 e.target.classList.add("clicked");
+                let urlBcb = getUrlDolarBcb();
+                $("#bcbCoti").attr("href", urlBcb);
 
                 Promise.all(
                     [consultarDolarSi('https://dolarapi.com/v1/dolares'),
-                    consultarDolarBcb()])
+                    consultarDolarBcb(urlBcb)])
                     .then((cotis) => {
                         console.log(cotis);
                         cotDolarSi = cotis[0];
                         cotDolarBcb = cotis[1];
                         let texto = "";
-                        if(cotDolarSi.state == "ok"){
+                        if (cotDolarSi.state == "ok" && cotDolarBcb.state == "ok") {
                             usdBrs = redondear(1 * cotDolarBcb.data);
                             $(".usd-brs").text(usdBrs);
 
@@ -119,10 +162,10 @@
                             brsArsb = redondear(brsUsd * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
                             $(".brs-arsb").text(brsArsb);
 
-                            arsUsd = redondear(1 / cotDolarSi.data.find((obj) => obj.casa == "oficial").venta,5);
+                            arsUsd = redondear(1 / cotDolarSi.data.find((obj) => obj.casa == "oficial").venta, 5);
                             $(".ars-usd").text(arsUsd);
 
-                            arsBrs = redondear(usdBrs * arsUsd,5);
+                            arsBrs = redondear(usdBrs * arsUsd, 5);
                             $(".ars-brs").text(arsBrs);
 
                             arstBrs = redondear(arsUsd * usdArst);
@@ -132,18 +175,18 @@
                             $(".ars-arsb").text(arsbBrs);
 
                             let importe = $("#importe").val();
-                            if(e.target.name == "brs"){
-                                reales = redondear(importe);
-                                dolares = redondear(importe / cotDolarBcb.data);
-                                pesos = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
-                                pesosTarjeta = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
-                                pesosBolsa = redondear(dolares * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta);
+                            if (e.target.name == "brs") {
+                                reales = importe;
+                                dolares = importe / cotDolarBcb.data;
+                                pesos = dolares * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta;
+                                pesosTarjeta = dolares * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta;
+                                pesosBolsa = dolares * cotDolarSi.data.find((obj) => obj.casa == "bolsa").venta;
                                 texto = "<p>" + importe + " reales son</p>";
-                                texto = texto + "<p>" + dolares + " dolares</p>";
-                                texto = texto + "<p>" + pesos + " pesos oficial</p>";
-                                texto = texto + "<p>" + pesosTarjeta + " pesos tarjeta</p>";
-                                texto = texto + "<p>" + pesosTarjeta + " pesos bolsa</p>";
-                            }else if(e.target.name == "ars"){
+                                texto = texto + "<p>" + redondear(dolares) + " DOLARES</p>";
+                                texto = texto + "<p>" + redondear(pesos) + " PESOS oficial</p>";
+                                texto = texto + "<p>" + redondear(pesosTarjeta) + " PESOS tarjeta</p>";
+                                texto = texto + "<p>" + redondear(pesosBolsa) + " PESOS MEP</p>";
+                            } else if (e.target.name == "ars") {
                                 pesos = redondear(importe);
                                 dolares = redondear(importe / cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
                                 dolaresTarjeta = redondear(importe / cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
@@ -152,9 +195,9 @@
                                 texto = "<p>" + importe + " PESOS son</p>";
                                 texto = texto + "<p>" + dolares + " DOLARES oficial</p>";
                                 texto = texto + "<p>" + dolaresTarjeta + " DOLARES tarjeta</p>";
-                                texto = texto + "<p>" + dolaresBolsa + " DOLARES bolsa</p>";
+                                texto = texto + "<p>" + dolaresBolsa + " DOLARES MEP</p>";
                                 texto = texto + "<p>" + reales + " REALES</p>";
-                            }else if(e.target.name == "usd"){
+                            } else if (e.target.name == "usd") {
                                 dolares = redondear(importe);
                                 pesos = redondear(importe * cotDolarSi.data.find((obj) => obj.casa == "oficial").venta);
                                 pesosTarjeta = redondear(importe * cotDolarSi.data.find((obj) => obj.casa == "tarjeta").venta);
@@ -163,17 +206,16 @@
                                 texto = "<p>" + importe + " DOLARES son</p>";
                                 texto = texto + "<p>" + pesos + " PESOS oficial</p>";
                                 texto = texto + "<p>" + pesosTarjeta + " PESOS tarjeta</p>";
-                                texto = texto + "<p>" + pesosBolsa + " PESOS bolsa</p>";
+                                texto = texto + "<p>" + pesosBolsa + " PESOS MEP</p>";
                                 texto = texto + "<p>" + reales + " REALES</p>";
-
                             }
                             $("#result").html(texto);
-                        }else{
+                        } else {
                             $("#result").text("ERROR");
                         }
-
                     }).catch((error) => {
                         console.log(error);
+                        $("#result").text(error);
                     });
             });
         });
@@ -184,8 +226,8 @@
     <main>
         <header>
             <form id="datos">
-                <input placeholder="IMPORTE..." class="big-input-numbers font-size-3em" id="importe" name="importe" value=""
-                type="number">
+                <input placeholder="IMPORTE..." class="big-input-numbers font-size-3em" id="importe" name="importe"
+                    value="" type="number">
             </form>
         </header>
         <article id="conversiones" tabindex="1">
@@ -231,6 +273,10 @@
                 </div>
             </div>
         </article>
+        <footer>
+            <p>Cotizaciones de <a href="https://dolarapi.com/v1/dolares">Dolar API</a> y <a id="bcbCoti"
+                    href="#">BCB</a></p>
+        </footer>
     </main>
 </body>
 
